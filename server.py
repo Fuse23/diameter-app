@@ -15,17 +15,17 @@ from diameter.node.application import (
 )
 
 
-# logging.basicConfig(
-#     format="%(asctime)s %(name)-22s %(levelname)-7s %(message)s",
-#     level=logging.DEBUG
-# )
+logging.basicConfig(
+    format="%(asctime)s %(name)-22s %(levelname)-7s %(message)s",
+    level=logging.CRITICAL,
+)
 
 # logging.getLogger("diameter.peer.msg").setLevel(logging.DEBUG)
 
 
 class MyApp(ThreadingApplication):
     def handle_request(self, message: Message) -> Message | None:
-        print(f"{threading.get_ident()} Got: {message}")
+        print(threading.get_ident(), message)
         answer = self.generate_answer(
             message,
             result_code=E_RESULT_CODE_DIAMETER_SUCCESS
@@ -76,7 +76,7 @@ def add_peers(node: Node) -> list[Peer]:
 def get_peers() -> list[str]:
     peers = []
 
-    for i in range(10):
+    for i in range(100):
         peers.append(f"aaa://client{i}.test.realm")
 
     return peers
@@ -102,7 +102,7 @@ def get_app() -> Application:
     return MyApp(
         APP_EAP_APPLICATION,
         is_auth_application=True,
-        max_threads=10,
+        max_threads=50,
     )
 
 

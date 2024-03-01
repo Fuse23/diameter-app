@@ -2,22 +2,23 @@ import logging
 import time
 import threading
 from argparse import ArgumentParser, Namespace
+from diameter.message import Message
 
 from diameter.message.constants import *
-from diameter.message.commands.diameter_eap import (
-    Message,
-    DiameterEapRequest,
-    DiameterEapAnswer,
-)
+from diameter.message.commands.diameter_eap import DiameterEapRequest, DiameterEapAnswer
 from diameter.node import Node
 from diameter.node.peer import Peer
 from diameter.node.application import Application, SimpleThreadingApplication
 
 
-# logging.basicConfig(
-#     format="%(asctime)s %(name)-22s %(levelname)-7s %(message)s",
-#     level=logging.DEBUG
-# )
+SERVER_NAME = "serve.test.realm"
+REALM = "test.realm"
+
+
+logging.basicConfig(
+    format="%(asctime)s %(name)-22s %(levelname)-7s %(message)s",
+    level=logging.CRITICAL,
+)
 
 # logging.getLogger("diameter.peer.msg").setLevel(logging.DEBUG)
 
@@ -55,9 +56,9 @@ def get_DER(app: Application) -> DiameterEapRequest:
     message.session_id = app.node.session_generator.next_id()
     message.origin_host = bytes(app.node.origin_host, "utf-8")
     message.origin_realm = bytes(app.node.realm_name, "utf-8")
-    message.destination_realm = b"test.realm"
+    message.destination_realm = bytes(REALM, "utf-8")
     message.auth_request_type = 0
-    message.destination_host = b"server.test.realm"
+    message.destination_host = bytes(SERVER_NAME, "utf-8")
 
     return message
 
@@ -65,14 +66,14 @@ def get_DER(app: Application) -> DiameterEapRequest:
 def get_node(number: int) -> Node:
     return Node(
         f"client{number}.test.realm",
-        "test.realm"
+        REALM
     )
 
 
 def get_peer(node: Node, port: int, server_ip: str) -> Peer:
     return node.add_peer(
-        f"aaa://server.test.realm:{port}",
-        "test.realm",
+        f"aaa://{SERVER_NAME}:{port}",
+        REALM,
         ip_addresses=[server_ip],
         is_persistent=True,
     )
@@ -94,7 +95,8 @@ def create_and_run_node(number: int, port: int, server_ip: str) -> None:
     app.wait_for_ready()
     answer = app.send_request(get_DER(app))
 
-    print(threading.get_ident(), answer)
+    if isinstance(answer, DiameterEapAnswer):
+        print(threading.get_ident(), answer)
 
     node.stop()
 
